@@ -1,185 +1,3 @@
-# # Imports and Setup
-# import streamlit as st
-# import torch
-# import faiss
-# import pickle
-# import numpy as np
-# from PIL import Image
-# import os
-# import re
-# from torchvision import models, transforms
-# import pandas as pd
-# from collections import defaultdict
-
-# # Configuration
-# main_folder = r"augmented_images(Stef)" # File format
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# original_image_base = "./augmented_images(Stef)/All Images"  # Directory for original images
-
-# # Load the pre-trained model and the pre-trained model's weights
-# # Load model EXACTLY like notebook
-# resnet = models.resnet50(pretrained=True)
-# model = torch.nn.Sequential(*list(resnet.children())[:-1])
-# model.eval().to(device)
-
-# # Image transform (same as notebook)
-# transform = transforms.Compose([
-#     transforms.Resize((224, 224)),
-#     transforms.ToTensor(),
-#     transforms.Normalize([0.485, 0.456, 0.406],
-#                          [0.229, 0.224, 0.225])
-# ])
-
-# # Name extraction
-# def extract_medication_name(filename):
-#     name = os.path.splitext(filename)[0]
-#     name = re.sub(r'_aug_\d+', '', name)
-#     name = re.sub(r'_\d+$', '', name)
-#     name = re.sub(r'\[[^\]]*\]', '', name)
-#     name = re.sub(r'[-–](Box|Front box|Blister|Back|Front)', '', name, flags=re.IGNORECASE)
-#     name = re.sub(r'\(MA.*?\)', '', name)
-#     name = re.sub(r'\(M&mf.*?\)', '', name)
-#     name = re.sub(r'\s+', ' ', name).strip()
-#     return name
-
-# def extract_medication_key(med_name):
-#     return re.split(r'\(|-', med_name)[0].strip().lower()
-
-# def extract_embedding(image):
-#     """Extract embedding for the image"""
-#     if (isinstance(image, np.ndarray)):
-#         image = Image.fromarray(image)
-#     image = image.convert("RGB")
-#     tensor = transform(image).unsqueeze(0).to(device)
-#     with torch.no_grad():
-#         embedding = model(tensor).squeeze().cpu().numpy()
-#     return embedding
-
-
-# # def get_original_image_path(med_name):
-# #     """
-# #     Given a medication name, search the 'All Images' folder 
-# #     to find the original image by matching cleaned filenames (without augmentation tags).
-# #     """
-# #     # Strip augmentation suffixes and clean up the name
-# #     med_key = extract_medication_key(med_name)
-
-# #     # Walk through all subfolders in the 'All Images' directory
-# #     for root, dirs, files in os.walk(original_image_base):
-# #         for fname in files:
-# #             clean_name = extract_medication_key(extract_medication_name(fname))
-            
-# #             # Match the original image key with the cleaned medication key
-# #             if clean_name == med_key:
-# #                 return os.path.join(root, fname)
-    
-# #     return None  # Return None if the original image is not found
-
-# # Function to get original image path based on cleaned name
-# def get_original_image_path(augmented_name):
-#     """
-#     Given an augmented medication name, find the original image path
-#     by stripping '_aug_*' part from the filename.
-#     """
-#     # Remove '_aug_' and other augmentation tags from the filename
-#     cleaned_name = extract_medication_name(augmented_name)
-    
-#     # Walk through the 'All Images' folder to find the original image
-#     for root, dirs, files in os.walk(original_image_base):
-#         for fname in files:
-#             if extract_medication_name(fname) == cleaned_name:
-#                 return os.path.join(root, fname)
-    
-#     return None  # Return None if no match is found
-
-# # Load saved data
-# index = faiss.read_index("med_faiss_index.index")
-# with open("med_image_paths.pkl", "rb") as f:
-#     image_paths = pickle.load(f)
-# with open("med_names.pkl", "rb") as f:
-#     med_names = pickle.load(f)
-
-# # # UI
-# # st.title("💊 Medication Lookalike Finder")
-
-# # uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-# # if uploaded_file:
-# #     query_image = Image.open(uploaded_file)
-# #     st.image(query_image, caption=f"Query: {uploaded_file.name}", width=250)
-
-# #     query_name = extract_medication_name(uploaded_file.name)
-# #     query_key = extract_medication_key(query_name)
-# #     query_embedding = extract_embedding(query_image).reshape(1, -1)
-
-# #     # FAISS search
-# #     D, I = index.search(query_embedding, k=50)
-# #     medkey_to_best = {}
-
-# #     for dist, idx in zip(D[0], I[0]):
-# #         name = med_names[idx]
-# #         key = extract_medication_key(name)
-# #         if key != query_key and key not in medkey_to_best:
-# #             medkey_to_best[key] = (name, image_paths[idx], dist)
-# #         if len(medkey_to_best) == 5:
-# #             break
-
-# #     results = sorted(medkey_to_best.values(), key=lambda x: x[2])
-
-# #     st.subheader("🔍 Top 5 Visually Similar Medications")
-# #     cols = st.columns(5)
-# #     for i, (name, path, dist) in enumerate(results):
-# #         with cols[i]:
-# #             if os.path.exists(path):
-# #                 st.image(path, caption=f"{name}\nScore: {round(dist, 2)}")
-# #             else:
-# #                 st.error(f"Image not found:\n{path}")
-
-# # =============================================================================================================================
-# # UI
-# st.title("💊 Medication Lookalike Finder")
-
-# uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-# if uploaded_file:
-#     query_image = Image.open(uploaded_file)
-#     st.image(query_image, caption=f"Query: {uploaded_file.name}", width=250)
-
-#     query_name = extract_medication_name(uploaded_file.name)
-#     query_key = extract_medication_key(query_name)
-#     query_embedding = extract_embedding(query_image).reshape(1, -1)
-
-#     # FAISS search
-#     D, I = index.search(query_embedding, k=50)
-#     medkey_to_best = {}
-
-#     for dist, idx in zip(D[0], I[0]):
-#         name = med_names[idx]
-#         key = extract_medication_key(name)
-#         if key != query_key and key not in medkey_to_best:
-#             medkey_to_best[key] = (name, image_paths[idx], dist)
-#         if len(medkey_to_best) == 5:
-#             break
-
-#     results = sorted(medkey_to_best.values(), key=lambda x: x[2])
-
-#     st.subheader("🔍 Top 5 Visually Similar Medications")
-#     cols = st.columns(5)
-#     for i, (name, path, dist) in enumerate(results):
-#         with cols[i]:
-#             # Get the original image path using the cleaned medication name
-#             original_path = get_original_image_path(name)
-            
-#             if original_path and os.path.exists(original_path):
-#                 # Display the original image
-#                 st.image(original_path, caption=f"{name}\nScore: {round(dist, 2)}")
-#             else:
-#                 # If the original image is not found, show a warning
-#                 st.warning(f"Original image not found for {name}")
-
-
-
-#
-
-
 import streamlit as st
 import torch
 import faiss
@@ -189,238 +7,187 @@ from PIL import Image
 import os
 import re
 from torchvision import models, transforms
-import pandas as pd
-from collections import defaultdict
+import torch.nn as nn
 
 # Configuration
-main_folder = r"augmented_images(Stef)"  # Directory for augmented images
-original_image_base = "./augmented_images(Stef)/All Images"  # Directory for original images
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+original_image_base = "./Dataset/All Images"
+pkh_pkl_base_path = "./pth_pkl_files"
+index_base_path = "./index_files"
 
-# Load the pre-trained model
-resnet = models.resnet50(pretrained=True)
-model = torch.nn.Sequential(*list(resnet.children())[:-1])
-model.eval().to(device)
+# Sidebar: Model selection
+st.sidebar.title("Model Settings")
+model_choice = st.sidebar.selectbox(
+    "Select backbone model:",
+    ("ResNet50", "DenseNet121")
+)
 
-# Image transform
+@st.cache_resource
+def load_backbone(choice: str):
+    """
+    Load and cache a feature-extractor backbone based on the user's choice.
+    """
+    if choice == "ResNet50":
+        # Pretrained ResNet50
+        resnet_model = models.resnet50(pretrained=True)
+        # Remove final classification layer → 2048-dim features
+        backbone = nn.Sequential(*list(resnet_model.children())[:-1])
+        dim = 2048
+
+    elif choice == "DenseNet121":
+        # DenseNet121 architecture
+        densenet_model = models.densenet121(pretrained=False)
+        # Load checkpoint dict
+        ckpt = torch.load(os.path.join(
+            pkh_pkl_base_path,"densenet121_full_checkpoint_iter1_new_dataset.pth"),
+            map_location=device
+        )
+        # Unwrap if saved as {'model_state_dict': ...}
+        state_dict = ckpt['model_state_dict'] if isinstance(ckpt, dict) and 'model_state_dict' in ckpt else (
+            ckpt if isinstance(ckpt, dict) else ckpt.state_dict()
+        )
+        # Remove DataParallel prefixes
+        state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+        # Filter only feature extractor weights
+        feat_dict = {k: v for k, v in state_dict.items() if k.startswith('features.')}
+        # Load with strict=False to ignore missing classifier keys
+        densenet_model.load_state_dict(feat_dict, strict=False)
+        # Build backbone: features + ReLU + global pool → 1024-dim features
+        backbone = nn.Sequential(
+            densenet_model.features,
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d((1, 1))
+        )
+        dim = 1024
+
+    else:
+        st.error(f"Unknown model choice: {choice}")
+        return None
+
+    backbone.to(device)
+    backbone.eval()
+    return backbone, dim
+
+# Initialize selected backbone and dimension
+model, feat_dim = load_backbone(model_choice)
+
+@st.cache_resource
+def load_faiss_index(choice: str, dimension: int):
+    """
+    Load the FAISS index corresponding to the backbone's feature dimension.
+    """
+    if choice == "ResNet50" and dimension == 2048:
+        return faiss.read_index(os.path.join(
+            index_base_path,
+            "med_faiss_index.index"
+            ))
+    elif choice == "DenseNet121" and dimension == 1024:
+        return faiss.read_index(os.path.join(
+            index_base_path,
+            "med_faiss_index_densenet.index"
+            ))
+    else:
+        st.error("No FAISS index matching model choice and dimension.")
+        return None
+
+# Image transform pipeline
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# Helper functions to process filenames
-def extract_medication_name(filename):
-    """Clean up the medication name from the file"""
-    name = os.path.splitext(filename)[0]
-    name = re.sub(r'_aug_\d+', '', name)  # Remove _aug_ suffix
-    name = re.sub(r'_\d+$', '', name)  # Remove trailing numbers
-    name = re.sub(r'\[[^\]]*\]', '', name)  # Remove anything in square brackets
-    name = re.sub(r'[-–](Box|Front box|Blister|Back|Front)', '', name, flags=re.IGNORECASE)
-    name = re.sub(r'\(MA.*?\)', '', name)
-    name = re.sub(r'\(M&mf.*?\)', '', name)
-    name = re.sub(r'\s+', ' ', name).strip()
-    return name
+# Helper: clean filename to medication name
+def extract_medication_name(filename: str) -> str:
+    base = os.path.splitext(filename)[0]
+    base = re.sub(r'_aug_\d+', '', base)
+    base = re.sub(r'_\d+$', '', base)
+    base = re.sub(r'\[[^\]]*\]', '', base)
+    base = re.sub(r'[-–](Box|Front box|Blister|Back|Front)', '', base, flags=re.IGNORECASE)
+    base = re.sub(r'\(MA.*?\)', '', base)
+    base = re.sub(r'\(M&mf.*?\)', '', base)
+    return re.sub(r'\s+', ' ', base).strip()
 
-def extract_medication_key(med_name):
-    """Extract the key to identify medication without extra symbols"""
+# Helper: medication key for uniqueness
+def extract_medication_key(med_name: str) -> str:
     return re.split(r'\(|-', med_name)[0].strip().lower()
 
-def extract_embedding(image):
-    """Extract embedding for the image"""
+# Helper: get embedding from selected backbone
+def extract_embedding(image: Image.Image) -> np.ndarray:
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image)
     image = image.convert("RGB")
     tensor = transform(image).unsqueeze(0).to(device)
     with torch.no_grad():
-        embedding = model(tensor).squeeze().cpu().numpy()
-    return embedding
+        emb = model(tensor).squeeze().cpu().numpy()
+    return emb
 
-# Function to get original image path based on cleaned name
-def get_original_image_path(augmented_name):
-    """
-    Given an augmented medication name, find the original image path
-    by stripping '_aug_*' part from the filename.
-    """
-    # Remove '_aug_' and other augmentation tags from the filename
-    cleaned_name = extract_medication_name(augmented_name)
-    
-    # Walk through the 'All Images' folder to find the original image
-    for root, dirs, files in os.walk(original_image_base):
+# Helper: find original image path
+def get_original_image_path(augmented_name: str) -> str:
+    clean = extract_medication_name(augmented_name)
+    for root, _, files in os.walk(original_image_base):
         for fname in files:
-            if extract_medication_name(fname) == cleaned_name:
+            if extract_medication_name(fname) == clean:
                 return os.path.join(root, fname)
-    
-    return None  # Return None if no match is found
+    return None
 
-# Load saved data for FAISS
-index = faiss.read_index("med_faiss_index.index")
-with open("med_image_paths.pkl", "rb") as f:
+# Load FAISS index and metadata
+index = load_faiss_index(model_choice, feat_dim)
+with open(os.path.join(
+    pkh_pkl_base_path, 
+    "med_image_paths.pkl"), 
+    "rb") as f:
     image_paths = pickle.load(f)
-with open("med_names.pkl", "rb") as f:
+with open(os.path.join(
+    pkh_pkl_base_path, 
+    "med_names.pkl"
+    ), 
+    "rb") as f:
     med_names = pickle.load(f)
 
-# UI to upload image and display results
+# Streamlit UI
 st.title("💊 Medication Lookalike Finder")
-
+st.subheader(f"Selected model: **{model_choice}**")
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 if uploaded_file:
-    query_image = Image.open(uploaded_file)
-    st.image(query_image, caption=f"Query: {uploaded_file.name}", width=250)
+    query_img = Image.open(uploaded_file)
+    st.image(query_img, caption=f"Query: {uploaded_file.name}", width=250)
 
-    query_name = extract_medication_name(uploaded_file.name)
-    query_key = extract_medication_key(query_name)
-    query_embedding = extract_embedding(query_image).reshape(1, -1)
+    q_name = extract_medication_name(uploaded_file.name)
+    q_key = extract_medication_key(q_name)
+    q_emb = extract_embedding(query_img).reshape(1, -1)
 
-    # FAISS search for visually similar medications
-    D, I = index.search(query_embedding, k=50)
-    medkey_to_best = {}
-
-    for dist, idx in zip(D[0], I[0]):
+    # FAISS search
+    distances, indices = index.search(q_emb, k=50)
+    
+    # 1) gather top unique candidates (up to 20 to allow for gaps)
+    candidates = []
+    seen_keys = set()
+    for dist, idx in zip(distances[0], indices[0]):
         name = med_names[idx]
-        key = extract_medication_key(name)
-        if key != query_key and key not in medkey_to_best:
-            medkey_to_best[key] = (name, image_paths[idx], dist)
-        if len(medkey_to_best) == 5:
+        key  = extract_medication_key(name)
+        if key != q_key and key not in seen_keys:
+            candidates.append((name, image_paths[idx], dist))
+            seen_keys.add(key)
+        if len(candidates) >= 20:
             break
 
-    results = sorted(medkey_to_best.values(), key=lambda x: x[2])
-
-    st.subheader("🔍 Top 5 Visually Similar Medications")
-    cols = st.columns(5)
-    for i, (name, path, dist) in enumerate(results):
-        with cols[i]:
-            # Get the original image path using the cleaned medication name
-            original_path = get_original_image_path(name)
-            
-            if original_path and os.path.exists(original_path):
-                # Display the original image
-                st.image(original_path, caption=f"{name}\nScore: {round(dist, 2)}")
-            else:
-                # If the original image is not found, show a warning
-                st.warning(f"Original image not found for {name}")
-
-
-
-#
-
-
-import streamlit as st
-import torch
-import faiss
-import pickle
-import numpy as np
-from PIL import Image
-import os
-import re
-from torchvision import models, transforms
-import pandas as pd
-from collections import defaultdict
-
-# Configuration
-main_folder = r"augmented_images(Stef)"  # Directory for augmented images
-original_image_base = "./augmented_images(Stef)/All Images"  # Directory for original images
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Load the pre-trained model
-resnet = models.resnet50(pretrained=True)
-model = torch.nn.Sequential(*list(resnet.children())[:-1])
-model.eval().to(device)
-
-# Image transform
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-
-# Helper functions to process filenames
-def extract_medication_name(filename):
-    """Clean up the medication name from the file"""
-    name = os.path.splitext(filename)[0]
-    name = re.sub(r'_aug_\d+', '', name)  # Remove _aug_ suffix
-    name = re.sub(r'_\d+$', '', name)  # Remove trailing numbers
-    name = re.sub(r'\[[^\]]*\]', '', name)  # Remove anything in square brackets
-    name = re.sub(r'[-–](Box|Front box|Blister|Back|Front)', '', name, flags=re.IGNORECASE)
-    name = re.sub(r'\(MA.*?\)', '', name)
-    name = re.sub(r'\(M&mf.*?\)', '', name)
-    name = re.sub(r'\s+', ' ', name).strip()
-    return name
-
-def extract_medication_key(med_name):
-    """Extract the key to identify medication without extra symbols"""
-    return re.split(r'\(|-', med_name)[0].strip().lower()
-
-def extract_embedding(image):
-    """Extract embedding for the image"""
-    if isinstance(image, np.ndarray):
-        image = Image.fromarray(image)
-    image = image.convert("RGB")
-    tensor = transform(image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        embedding = model(tensor).squeeze().cpu().numpy()
-    return embedding
-
-# Function to get original image path based on cleaned name
-def get_original_image_path(augmented_name):
-    """
-    Given an augmented medication name, find the original image path
-    by stripping '_aug_*' part from the filename.
-    """
-    # Remove '_aug_' and other augmentation tags from the filename
-    cleaned_name = extract_medication_name(augmented_name)
-    
-    # Walk through the 'All Images' folder to find the original image
-    for root, dirs, files in os.walk(original_image_base):
-        for fname in files:
-            if extract_medication_name(fname) == cleaned_name:
-                return os.path.join(root, fname)
-    
-    return None  # Return None if no match is found
-
-# Load saved data for FAISS
-index = faiss.read_index("med_faiss_index.index")
-with open("med_image_paths.pkl", "rb") as f:
-    image_paths = pickle.load(f)
-with open("med_names.pkl", "rb") as f:
-    med_names = pickle.load(f)
-
-# UI to upload image and display results
-st.title("💊 Medication Lookalike Finder")
-
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-if uploaded_file:
-    query_image = Image.open(uploaded_file)
-    st.image(query_image, caption=f"Query: {uploaded_file.name}", width=250)
-
-    query_name = extract_medication_name(uploaded_file.name)
-    query_key = extract_medication_key(query_name)
-    query_embedding = extract_embedding(query_image).reshape(1, -1)
-
-    # FAISS search for visually similar medications
-    D, I = index.search(query_embedding, k=50)
-    medkey_to_best = {}
-
-    for dist, idx in zip(D[0], I[0]):
-        name = med_names[idx]
-        key = extract_medication_key(name)
-        if key != query_key and key not in medkey_to_best:
-            medkey_to_best[key] = (name, image_paths[idx], dist)
-        if len(medkey_to_best) == 5:
+    # 2) filter down to the first 5 whose originals actually exist
+    results = []
+    for name, path, score in candidates:
+        orig = get_original_image_path(name)
+        if orig and os.path.exists(orig):
+            results.append((name, orig, score))
+        if len(results) == 5:
             break
 
-    results = sorted(medkey_to_best.values(), key=lambda x: x[2])
+    # 3) warn if we couldn’t find 5 originals
+    if len(results) < 5:
+        st.warning(f"Only found {len(results)} similar medications with available originals.")
 
+    # 4) display however many we have
     st.subheader("🔍 Top 5 Visually Similar Medications")
-    cols = st.columns(5)
-    for i, (name, path, dist) in enumerate(results):
-        with cols[i]:
-            # Get the original image path using the cleaned medication name
-            original_path = get_original_image_path(name)
-            
-            if original_path and os.path.exists(original_path):
-                # Display the original image
-                st.image(original_path, caption=f"{name}\nScore: {round(dist, 2)}")
-            else:
-                # If the original image is not found, show a warning
-                st.warning(f"Original image not found for {name}")
+    cols = st.columns(len(results))
+    for col, (name, orig, score) in zip(cols, results):
+        with col:
+            st.image(orig, caption=f"{name}\nScore: {round(score, 2)}")
