@@ -50,7 +50,10 @@ conda activate <name of env>
 python -m pip install -r requirements.txt
 ```
 
-2. Launch the Streamlit app
+2. Getting `All Images` Dataset
+- Download the "Oral Dose Forms" dataset and add the images contents into the "`Dataset/All Images`" folder
+
+3. Launch the Streamlit app
 ```bash
 streamlit run meds_app.py
 ```
@@ -72,7 +75,8 @@ The script will:
 - app_resources/faiss_indexes/med_faiss_index_*.index
 - app_resources/model_checkpoints/med_image_paths*.pkl
 - app_resources/model_checkpoints/med_names.pkl
-4. The Streamlit app picks these up automatically on the next run.
+
+5. The Streamlit app picks these up automatically on the next run.
 
 ## 🧠 Models
 
