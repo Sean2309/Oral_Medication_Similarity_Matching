@@ -1,2 +1,2 @@
 *.bin filter=lfs diff=lfs merge=lfs -text
-med_faiss_index.index filter=lfs diff=lfs merge=lfs -text
+med_faiss_index_resnet.index filter=lfs diff=lfs merge=lfs -text

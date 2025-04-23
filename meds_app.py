@@ -12,8 +12,8 @@ import torch.nn as nn
 # Configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 original_image_base = "./Dataset/All Images"
-pkh_pkl_base_path = "./pth_pkl_files"
-index_base_path = "./index_files"
+pkh_pkl_base_path = "./app_resources/model_checkpoints"
+index_base_path = "./app_resources/faiss_indexes"
 
 # Sidebar: Model selection
 st.sidebar.title("Model Settings")
@@ -39,7 +39,7 @@ def load_backbone(choice: str):
         densenet_model = models.densenet121(pretrained=False)
         # Load checkpoint dict
         ckpt = torch.load(os.path.join(
-            pkh_pkl_base_path,"densenet121_full_checkpoint_iter1_new_dataset.pth"),
+            pkh_pkl_base_path,"densenet121_full_checkpoint_iter1.pth"),
             map_location=device
         )
         # Unwrap if saved as {'model_state_dict': ...}
@@ -79,12 +79,12 @@ def load_faiss_index(choice: str, dimension: int):
     if choice == "ResNet50" and dimension == 2048:
         return faiss.read_index(os.path.join(
             index_base_path,
-            "med_faiss_index.index"
+            "med_faiss_index_resnet.index"
             ))
     elif choice == "DenseNet121" and dimension == 1024:
         return faiss.read_index(os.path.join(
             index_base_path,
-            "med_faiss_index_densenet.index"
+            "med_faiss_index_densenet_1.index"
             ))
     else:
         st.error("No FAISS index matching model choice and dimension.")
